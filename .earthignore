@@ -1,0 +1,6 @@
+/priv/dialyzer/.gitkeep
+/.elixir_ls/
+/.vscode/
+Earthfile
+*.DETS
+/.tmp-earthly*
