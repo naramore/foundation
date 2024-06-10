@@ -1,6 +1,43 @@
 defmodule Interceptor do
   @moduledoc """
-  https://github.com/exoscale/interceptor
+  Inspired by: https://github.com/exoscale/interceptor
+
+  An interceptor is a map or map-like object with the keys
+  `:enter`, `:leave`, and `:error`. The value of each key is a
+  function; missing keys or `nil` values are ignored.
+
+  When executing a context, first all the `:enter` functions are
+  invoked in order. As this happens, the interceptors are pushed
+  onto a stack.
+
+  When execution reaches the end of the queue, it begins popping
+  interceptors off the stack and calling their `:leave` functions.
+  Therefore `:leave` functions are called in the opposite order
+  from `:enter` functions.
+
+  For example:
+
+  ```
+  enter A -> enter B -> enter C -> leave C -> leave B -> leave A
+  ```
+
+  Both the `:enter` and `:leave` functions are called on a single
+  argument, the context map, and return an updated context.
+
+  If any interceptor function throws an exception, execution stops
+  and begins popping interceptors off the stack and calling their
+  `:error` functions. The `:error` function takes 2 arguments:
+  the context and the error triggering the call.
+
+  For example:
+
+  ```
+  enter A -> enter B -> enter C -> leave C -> leave B -> leave A
+                          |
+                        (error)
+                          |
+  error A <- error B <----+
+  ```
   """
   use Boundary, top_level?: true, deps: [Duct], exports: [Stage]
 
@@ -16,6 +53,16 @@ defmodule Interceptor do
   @type status :: :enter | :leave | {:error, err()}
 
   @typedoc """
+  The context contains 3 key pieces of data:
+
+  - `:__queue__` - a `t:queue.queue()` of interceptor stages.
+
+  - `:__stack__` - a list of interceptor stages.
+
+  - `:__status__` - one of `:enter`, `:leave`, or `{:error, _}`.
+
+  With the rest of the map being arbitrary and specific to the
+  domain of the interceptor stages.
   """
   @type ctx :: %{
           :__queue__ => :queue.queue(),
@@ -28,60 +75,14 @@ defmodule Interceptor do
   @type error_fun :: Stage.error_fun()
   @type maybe(x) :: x | nil
 
-  # TODO: remove this + replace w/ tests
-  @doc false
-  def test do
-    inc =
-      Stage.create(:inc,
-        enter: &inc_ctx(&1, :a),
-        leave: &inc_ctx(&1, :b)
-      )
-
-    a =
-      Stage.create(:a,
-        enter: &conj_ctx(&1, :x, :a),
-        leave: &conj_ctx(&1, :x, :f)
-      )
-
-    b =
-      Stage.create(:b,
-        enter: &conj_ctx(&1, :x, :b),
-        leave: &conj_ctx(&1, :x, :e)
-      )
-
-    c =
-      Stage.create(:c,
-        enter: &conj_ctx(&1, :x, :c),
-        leave: &conj_ctx(&1, :x, :d)
-      )
-
-    wtf =
-      Stage.create(:wtf,
-        enter: &conj_ctx(&1, :x, :wtf),
-        leave: fn c ->
-          c
-          |> conj_ctx(:x, :wtf_out!)
-          |> enqueue([a])
-        end
-      )
-
-    [a, inc, b, wtf, inc, c]
-    |> then(&execute(%{a: 0, b: 0}, &1, debug?: true))
-  end
-
-  defp conj_ctx(ctx, key, val) do
-    Map.update(ctx, key, [val], &(&1 ++ [val]))
-  end
-
-  defp inc_ctx(ctx, key) do
-    Map.update(ctx, key, 1, &(&1 + 1))
-  end
-
   #############################################################################
   # region API
   #############################################################################
 
   @doc """
+  Similar to `execute(ctx, [], [])`.
+
+  See `execute/3` for more details.
   """
   @spec execute(ctx()) :: {:ok, ctx()} | {:error, err()}
   def execute(ctx) do
@@ -92,6 +93,13 @@ defmodule Interceptor do
   end
 
   @doc """
+  Executes a queue of interceptors attached to the context.
+
+  ## Options
+
+  * `:debug?` - enables stage logging (defaults to `false`).
+
+  See `debug_stages/2` for more details on logging options.
   """
   @spec execute(map(), [stage()], keyword()) :: {:ok, ctx()} | {:error, err()}
   def execute(ctx, stages, opts \\ []) do
@@ -115,6 +123,7 @@ defmodule Interceptor do
   end
 
   @doc """
+  Adds an interceptor stage to the given `ctx`.
   """
   @spec stage(ctx(), Stage.name(), keyword()) :: ctx()
   def stage(ctx, name, opts \\ []) do
@@ -122,6 +131,7 @@ defmodule Interceptor do
   end
 
   @doc """
+  Initializes the context with values from `ctx`.
   """
   @spec start(map()) :: ctx()
   def start(ctx) do
@@ -129,6 +139,7 @@ defmodule Interceptor do
   end
 
   @doc """
+  Creates an empty context.
   """
   @spec new() :: ctx()
   def new do
@@ -149,6 +160,34 @@ defmodule Interceptor do
   end
 
   @doc """
+  Applies logging to chain of interceptors.
+
+  ## Options
+
+  * `:keys` - the keys to be included in the log,
+    see `Logging Keys` section for more details
+    (defaults to `[:where, :stage, :ctx, :error]`).
+
+  * `:stages` - the interceptor stages logging will be applied to
+    (defaults to `[:enter, :leave, :error]`).
+
+  * `:clean_ctx?` - whether or not to run `clean/1` against the context
+    prior to logging (defaults to `true`).
+
+  * `:before?` - log before interceptor stage (defaults to `true`).
+
+  * `:after?` - log after interceptor stage (defaults to `true`).
+
+  ## Logging Keys
+
+  * `:where` - either `:before` or `:after`.
+
+  * `:stage` - a tuple of the interceptor name and stage
+    (e.g. `{:foo, :enter}`).
+
+  * `:ctx` - the full (or cleaned) context.
+
+  * `:error` - the current error (should be `nil` for non-`:error` stages).
   """
   @spec debug_stages([stage()], keyword()) :: [stage()]
   def debug_stages(chain, opts \\ []) do
@@ -159,12 +198,12 @@ defmodule Interceptor do
     into_stages(chain, stages, fn sf, %{interceptor: i, stage: k} ->
       sf
       |> then(
-        &if Keyword.get(opts, :after, true) do
+        &if Keyword.get(opts, :after?, true) do
           after_stage(&1, do_debug(:after, i, k, log_keys, clean_ctx?))
         end
       )
       |> then(
-        &if Keyword.get(opts, :before, true) do
+        &if Keyword.get(opts, :before?, true) do
           before_stage(&1, do_debug(:before, i, k, log_keys, clean_ctx?))
         end
       )
@@ -211,6 +250,9 @@ defmodule Interceptor do
   #############################################################################
 
   @doc """
+  Removes all remaining interceptors from context's execution queue.
+  This effectively short-circuits execution of interceptors' `:enter`
+  functions and begins executing the `:leave` functions.
   """
   @spec terminate(ctx()) :: ctx()
   def terminate(ctx) do
@@ -218,6 +260,9 @@ defmodule Interceptor do
   end
 
   @doc """
+  Removes all remaining interceptors from context's execution queue and stack.
+  This effectively short-circuits execution of
+  interceptors' `:enter`/`:leave` and returns the context.
   """
   @spec halt(ctx()) :: ctx()
   def halt(ctx) do
@@ -227,6 +272,7 @@ defmodule Interceptor do
   end
 
   @doc """
+  Adds interceptors to current context.
   """
   @spec enqueue(ctx(), [stage()]) :: ctx()
   def enqueue(ctx, interceptors)
@@ -247,6 +293,8 @@ defmodule Interceptor do
   end
 
   @doc """
+  Takes a context from execution and run `xf` (transducing fun) on stack,
+  returns a new context.
   """
   @spec xform_stack(ctx(), Duct.transducer(stage(), any(), stage(), any())) :: ctx()
   def xform_stack(ctx, xf) do
@@ -254,6 +302,8 @@ defmodule Interceptor do
   end
 
   @doc """
+  Takes a context from execution and run `xf` (transducing fun) on queue,
+  returns a new context.
   """
   @spec xform_queue(ctx(), Duct.transducer(stage(), any(), stage(), any())) :: ctx()
   def xform_queue(ctx, xf) do
@@ -263,6 +313,8 @@ defmodule Interceptor do
   end
 
   @doc """
+  Takes a context from execution and run `xf` (transducing fun) on stack/queue,
+  returns a new context.
   """
   @spec xform(ctx(), Duct.transducer(stage(), any(), stage(), any())) :: ctx()
   def xform(ctx, xf) do
@@ -272,6 +324,8 @@ defmodule Interceptor do
   end
 
   @doc """
+  Remove all interceptors matching `pred` from stack/queue,
+  returns context.
   """
   @spec remove(ctx(), (stage() -> boolean())) :: ctx()
   def remove(ctx, pred) do
@@ -285,6 +339,10 @@ defmodule Interceptor do
   #############################################################################
 
   @doc """
+  Takes a stage function, and wraps it with a callback that will
+  return a new context from the application of `g` onto it. It can be
+  useful to run a separate function after a stage returns and apply
+  some transformation to it relative to the original context.
   """
   @spec transform((a -> b), (ctx(), b -> c)) :: (a -> c) when a: any, b: any, c: any
   def transform(f, g) do
@@ -292,20 +350,24 @@ defmodule Interceptor do
   end
 
   @doc """
+  Modifies interceptor stage to *take in* specified `path`.
   """
-  @spec into(stage_fun(), path :: [any, ...]) :: stage_fun()
-  def into(f, path) do
+  @spec take_in(stage_fun(), path :: [any, ...]) :: stage_fun()
+  def take_in(f, path) do
     fn ctx -> f.(get_in(ctx, path)) end
   end
 
   @doc """
+  Modifies interceptor stage to *return at* specified `path`.
   """
-  @spec out(stage_fun(), path :: [any, ...]) :: stage_fun()
-  def out(f, path) do
+  @spec return_at(stage_fun(), path :: [any, ...]) :: stage_fun()
+  def return_at(f, path) do
     transform(f, &put_in(&1, path, &2))
   end
 
   @doc """
+  Modifies interceptor stage to only run on `ctx` if `pred`
+  returns `true`.
   """
   @spec whenever(stage_fun(), (ctx() -> boolean)) :: stage_fun()
   def whenever(f, pred) do
@@ -319,15 +381,17 @@ defmodule Interceptor do
   end
 
   @doc """
+  Modifies interceptor stage to take from `path` and return to `path`.
   """
   @spec lens(stage_fun(), path :: [any, ...]) :: stage_fun()
   def lens(f, path) do
     f
-    |> into(path)
-    |> out(path)
+    |> take_in(path)
+    |> return_at(path)
   end
 
   @doc """
+  Run function for side-effects only and return context.
   """
   @spec discard(stage_fun()) :: stage_fun()
   def discard(f) do
@@ -352,6 +416,8 @@ defmodule Interceptor do
   end
 
   @doc """
+  Wraps stage fn with another one, basically a middleware
+  that will be run before a stage.
   """
   @spec before_stage(fun(), fun()) :: fun()
   def before_stage(stage, before_stage) do
@@ -359,6 +425,7 @@ defmodule Interceptor do
   end
 
   @doc """
+  Modifies context after stage function ran.
   """
   @spec after_stage(fun(), fun()) :: fun()
   def after_stage(stage, after_stage) do
@@ -366,6 +433,29 @@ defmodule Interceptor do
   end
 
   @doc """
+  Applies function `f` to all `stages` of `chain`. This provides a way to
+  apply middleware to an entire interceptor chain at definition time.
+
+  ## Note
+
+  Useful when used in conjunction with, `after_stage/2`, `before_stage/2`.
+
+  ## Example
+
+    iex> alias Interceptor.Stage
+    iex> e = fn k, v -> &Map.update(&1, k, [v], &(&1 ++ [v])) end
+    iex> stages = [
+    ...>    Stage.create(:a, enter: e.(:x, :a), leave: e.(:x, :f)),
+    ...>    Stage.create(:b, enter: e.(:x, :b), leave: e.(:x, :e)),
+    ...>    Stage.create(:c, enter: e.(:x, :c), leave: e.(:x, :d)),
+    ...> ]
+    iex> stages = into_stages(stages, [:enter, :leave], fn stage_f, _ctx ->
+    ...>   after_stage(stage_f, &Map.update(&1, :cnt, 1, fn x -> x + 1 end))
+    ...> end)
+    iex> Interceptor.start(%{})
+    ...> |> Interceptor.execute(stages)
+    ...> |> Interceptor.clean()
+    %{x: [:a, :b, :c, :d, :e, :f], cnt: 6}
   """
   @spec into_stages([stage()], [atom()], (fun(), map() -> fun())) :: [stage()]
   def into_stages(chain, stages \\ @default_stages, f) do

@@ -82,11 +82,6 @@ defmodule Duct do
     |> Enum.into(coll)
   end
 
-  # @spec eduction(Enumerable.t(), transducer(x, r, s)) :: Enumerable.t() when x: any(), r: any(), s: any()
-  # def eduction(enum, xf) do
-  #   # Enum.reduce_while(eduction(xs, xf), acc, completing(f)) == transduce(xs, acc, xf, f)
-  # end
-
   @doc false
   @spec unwrap(maybe_cont_or_halt(acc), (acc -> acc), (acc -> acc)) :: acc when acc: any()
   def unwrap(acc, on_cont, on_halt \\ &halt/1)

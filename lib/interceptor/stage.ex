@@ -1,5 +1,6 @@
 defmodule Interceptor.Stage do
   @moduledoc """
+  Provides conveniences for creating interceptor stage modules.
   """
 
   defstruct name: nil,
@@ -27,19 +28,12 @@ defmodule Interceptor.Stage do
           | {:leave, stage_fun() | nil}
           | {:error, error_fun() | nil}
 
-  @doc """
-  """
   @callback enter(ctx()) :: ctx()
-
-  @doc """
-  """
   @callback leave(ctx()) :: ctx()
-
-  @doc """
-  """
   @callback error(ctx(), err()) :: ctx()
 
   @doc """
+  Create a new interceptor stage.
   """
   @spec new(name(), [opt()]) :: t()
   def new(name, opts \\ []) do
@@ -66,6 +60,8 @@ defmodule Interceptor.Stage do
   end
 
   @doc """
+  Create a new interceptor stage from a module,
+  map, or keyword opts.
   """
   @spec create(name(), keyword()) :: t() | nil
   def create(name, opts \\ []) do
@@ -93,6 +89,12 @@ defmodule Interceptor.Stage do
   end
 
   @doc """
+  Run the specified interceptor `stage`, returning a new context.
+
+  ## Notes
+
+  This function will rescue and/or catch any errors raised or thrown
+  from executing the interceptor stage functions.
   """
   @spec invoke(t(), ctx()) :: ctx()
   def invoke(stage, ctx) do

@@ -4,6 +4,7 @@
     Step.Reductions
   ],
   ignore_paths: [
+    ~r(lib/mix/.*),
     ~r(test/support/.*)
   ],
   min_module_doc_coverage: 85,
