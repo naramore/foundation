@@ -32,3 +32,4 @@ foundation-*.tar
 .tmp-earthly-*/
 
 /priv/dialyzer/*.plt*
+.DS_Store

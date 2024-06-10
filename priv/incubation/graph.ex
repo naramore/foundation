@@ -26,6 +26,7 @@ end
 defmodule Graph do
   @moduledoc """
   """
+  use Boundary, deps: [], exports: []
 
   alias Graph.Fnk
 

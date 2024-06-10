@@ -2,6 +2,8 @@ defmodule Digraph do
   @moduledoc """
   `:digraph` but using `Struct`s instead of `:ets`.
   """
+  use Boundary, top_level?: true, deps: [], exports: [Edge, Vertex]
+
   alias Digraph.{Edge, Vertex}
 
   @behaviour Access
@@ -320,6 +322,8 @@ defmodule Digraph do
   defmodule Vertex do
     @moduledoc false
 
+    alias Digraph
+
     @behaviour Access
 
     defstruct id: nil,
@@ -373,6 +377,7 @@ defmodule Digraph do
   defmodule Edge do
     @moduledoc false
 
+    alias Digraph
     alias Digraph.Vertex
 
     @behaviour Access

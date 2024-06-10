@@ -33,6 +33,7 @@ defmodule Rails do
     ...> end)
     {:error, 0.17}
   """
+  use Boundary, top_level?: true, deps: [], exports: []
 
   require Logger
 

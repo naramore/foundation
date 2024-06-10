@@ -1,5 +1,6 @@
 %Doctor.Config{
   ignore_modules: [
+    Interceptor.Stage,
     Step.Reductions
   ],
   ignore_paths: [

@@ -61,6 +61,7 @@ defmodule Pend do
 
   See how we can run part of the computation, stop...and resume it later?
   """
+  use Boundary, top_level?: true, deps: [], exports: []
 
   @typedoc """
   A suspended computation continuation.

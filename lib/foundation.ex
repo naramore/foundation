@@ -7,4 +7,5 @@ defmodule Foundation do
     - `Fix` -> Saga Pattern (i.e. effect compensation)
     - `Pend` -> Pause Monad (i.e. interuptible computation)
   """
+  use Boundary, top_level?: true, deps: [], exports: []
 end

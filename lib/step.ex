@@ -11,6 +11,7 @@ defmodule Step do
       - record history
       - track "cursor" (i.e. step + run #)
   """
+  use Boundary, top_level?: true, deps: [Pend], exports: [Reductions]
 
   @type pause(s, a) :: Pend.pause(s, a)
   @type trigger :: term()

@@ -567,3 +567,11 @@ defmodule Diet.Debug do
 
   defp stepper(state), do: state.steppers[state.current]
 end
+
+defmodule Diet do
+  use Boundary, deps: [], exports: []
+
+  def debug(stepper) do
+    Diet.Debug.on(stepper)
+  end
+end

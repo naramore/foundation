@@ -46,6 +46,7 @@ defmodule Arrow do
   inspiration for this module and much of the documentation was taken
   from it.
   """
+  use Boundary, top_level?: true, deps: [], exports: []
 
   @typedoc """
   A 1-arity function.

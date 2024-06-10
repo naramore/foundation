@@ -6,6 +6,7 @@ defmodule Foundation.MixProject do
       app: :foundation,
       version: "0.0.1",
       elixir: "~> 1.15",
+      compilers: [:boundary] ++ Mix.compilers(),
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -27,6 +28,10 @@ defmodule Foundation.MixProject do
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(env) when env in [:dev, :test], do: ["lib", "test/support"]
+
+  defp elixirc_paths(env) when env in [:incubation],
+    do: ["lib", "test/support", "priv/incubation"]
+
   defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help compile.app" to learn about applications.
@@ -41,12 +46,14 @@ defmodule Foundation.MixProject do
     [
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:boundary, "~> 0.10", runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test, :incubation], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:doctor, "~> 0.21", only: [:dev, :test]},
       {:excoveralls, "~> 0.18", only: :test},
       {:stream_data, "~> 0.6", only: [:dev, :test]},
-      {:muzak, "~> 1.1", only: :test}
+      {:muzak, "~> 1.1", only: :test},
+      {:proper, "~> 1.4", only: [:dev, :test]}
     ]
   end
 end

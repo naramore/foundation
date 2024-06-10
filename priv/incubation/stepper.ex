@@ -1,6 +1,7 @@
 defmodule Stepper do
   @moduledoc """
   """
+  use Boundary, deps: [Pend], exports: []
 
   # TODO: integrate w/ Step
   # TODO: integrate w/ Step.Reductions

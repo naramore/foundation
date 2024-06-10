@@ -1,8 +1,8 @@
-VERSION 0.7
+VERSION 0.8
 
 ARG --global ERLANG_VERSION=26.1.2
 ARG --global ELIXIR_VERSION=1.15.7
-ARG --global ALPINE_VERSION=3.18.4
+ARG --global ALPINE_VERSION=3.18.6
 
 all:
   WAIT
@@ -83,39 +83,60 @@ dialyzer-core-plt:
   SAVE ARTIFACT priv/dialyzer/* /
 
 test-coverage:
-  FROM +test-base-compiled
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base-compiled --pass-args
   COPY --if-exists ./coveralls.json .
   RUN mix test --trace --cover --slowest=10
 
 mutation-tests:
-  FROM +test-base-compiled
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base-compiled --pass-args
   COPY --if-exists ./.muzak.exs .
   RUN mix muzak
 
 audit-deps:
-  FROM +test-base-compiled
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base-compiled --pass-args
   RUN apk --update --upgrade add --no-cache git; \
       mix escript.install --force hex mix_audit
   RUN --no-cache ${MIX_HOME}/escripts/mix_audit
 
 lint-docs:
-  FROM +test-base-compiled
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base-compiled --pass-args
   COPY --if-exists .doctor.exs .
   RUN --no-cache mix doctor
 
 lint:
-  FROM +test-base-compiled
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base-compiled --pass-args
   COPY --if-exists ./.credo.exs .
   RUN --no-cache mix credo suggest -a --strict
 
 check-format:
-  FROM +test-base-with-deps
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base-with-deps --pass-args
   COPY --dir lib test ./
   COPY mix.exs mix.lock .formatter.exs .
   RUN --no-cache mix format --check-formatted
 
 check-unused-deps:
-  FROM +test-base
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base --pass-args
   COPY --if-exists --dir config ./
   COPY mix.exs mix.lock .
   RUN cp mix.lock mix.lock.orig && \
@@ -125,10 +146,16 @@ check-unused-deps:
       rm mix.lock.orig
 
 test-base-compiled:
-  FROM +check-compile-warnings
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +check-compile-warnings --pass-args
 
 check-compile-warnings:
-  FROM +test-base-compiled-deps
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base-compiled-deps --pass-args
   COPY --if-exists --dir lib ./
   IF [ "${MIX_ENV}" == "test" ]
     COPY --if-exists --dir test ./
@@ -137,18 +164,27 @@ check-compile-warnings:
   RUN mix compile --warnings-as-errors
 
 test-base-compiled-deps:
-  FROM +test-base-with-deps
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base-with-deps --pass-args
   RUN mkdir config
   COPY --if-exists config/config.exs config/${MIX_ENV}.exs config/
   RUN mix deps.compile
 
 test-base-with-deps:
-  FROM +test-base
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +test-base --pass-args
   COPY mix.exs mix.lock .
   RUN mix deps.get
 
 test-base:
-  FROM +elixir-base
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
+  FROM +elixir-base --pass-args
   RUN apk add --no-progress --update git build-base
   ENV ELIXIR_ASSERT_TIMEOUT=10000
   ENV MIX_ENV=test
@@ -157,4 +193,7 @@ test-base:
   ENV MIX_HOME=/root/.mix
 
 elixir-base:
+  ARG --required ERLANG_VERSION
+  ARG --required ELIXIR_VERSION
+  ARG --required ALPINE_VERSION
   FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VERSION}

@@ -51,6 +51,7 @@ defmodule Fix do
     ...> |> unwrap()
     {:error, [42, 43, nil, 430]}
   """
+  use Boundary, top_level?: true, deps: [Pend, Rails], exports: [Pend]
 
   @type two_track(a, b) :: Rails.two_track(a, b)
   @type fix(r, a, r2) :: (r, a -> r2)
