@@ -53,7 +53,7 @@ defmodule Foundation.MixProject do
       {:excoveralls, "~> 0.18", only: :test},
       {:stream_data, "~> 0.6", only: [:dev, :test]},
       {:muzak, "~> 1.1", only: :test},
-      {:proper, "~> 1.4", only: [:dev, :test]}
+      {:propcheck, "~> 1.4", only: [:test, :dev]},
     ]
   end
 end

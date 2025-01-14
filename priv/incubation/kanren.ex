@@ -29,6 +29,81 @@ defmodule Kanren do
   use Boundary, deps: [], exports: []
 end
 
+# Kanren.Stream
+#   @callback mzero() :: t(a) when a: any()
+#   @callback return(a) :: t(a) when a: any()
+#   @callback mplus(t(a), t(a)) :: t(a) when a: any()
+#   @callback bind(t(a), (a -> t(b))) :: t(b) when a: any(), b: any()
+#   @callback msplit(t(a)) :: {a, t(a)} | nil when a: any()
+# Kanren.Substitutions
+#   @callback lvar?(term()) :: boolean()
+#   @callback occurs?(t(), lterm(), lterm()) :: boolean()
+#   @callback extend_subs(t(), lterm(), lterm()) :: t()
+#   @callback lookup_sub(t(), lvar()) :: {:ok, lterm()} | :error
+#   @callback fresh_lvar(t(), atom()) :: {lvar(), t()}
+
+
+# NOTE: can we do (reify|unify|occur-check)-term like walk-term?
+#       (i.e. passing a function to it? does this even make sense?)
+
+# TODO:  walk(logic_term(), State.t()) :: State.t()
+# TODO: reify(logic_term(), State.t()) :: State.t()
+# TODO: unify(logic_term(), logic_term(), State.t()) :: State.t() | nil
+
+# Kanren.Substitutions.{Micro}
+# Kanren.Stream.{List, Choice}
+
+# Kanren
+# Kanren.Micro
+#   @callback eq(lterm(), lterm()) :: goal()
+#   @callback exist((a -> goal())) :: goal() when a: any()
+#   @callback conj(goal(), goal()) :: goal()
+#   @callback disj(goal(), goal()) :: goal()
+# Kanren.Mini
+#   @callback ifa()
+#   @callback ifu()
+#   @spec conj_many([goal()]) :: goal()
+#   @spec disj_many([goal()]) :: goal()
+#   @spec exist((... -> goal())) :: goal()
+#   @spec conde([[goal()]]) :: goal()
+#   @spec run(keyword(), (... -> goal())) :: [term()]
+#   @spec conda([[goal()]]) :: goal()
+#   @spec condu([[goal()]]) :: goal()
+#   @spec project((... -> goal())) :: goal()
+# Kanren.Mini.Macros
+#   defmacro snooze(f)
+#   defmacro conj_many(goals)
+#   defmacro disj_many(goals)
+#   defmacro exist(bindings, [do: {:__block__, _, goals}])
+#   defmacro conde([do: {:__block__, _, clauses}])
+#   defmacro run(bindings, opts \\ [], [do: {:__block__, _, goals}])
+#   defmacro conda([do: {:__block__, _, clauses}])
+#   defmacro condu([do: {:__block__, _, clauses}])
+#   defmacro project(bindings, [do: {:__block__, _, goals}])
+# Kanren.Mini.Goals
+#   @spec succeed() :: goal()
+#   @spec fail() :: goal()
+#   @spec heado([lterm(), ...], lterm()) :: goal()
+#   @spec tailo([lterm(), ...], [lterm()]) :: goal()
+#   @spec conso(lterm(), lterm(), [lterm(), ...]) :: goal()
+#   @spec membero(lterm(), [lterm(), ...]) :: goal()
+#   @spec appendo([lterm()], [lterm()], lterm()) :: goal()
+#   @spec emptyo(lterm()) :: goal()
+#   @spec onceo(goal()) :: goal()
+#   @spec copy_term(lvar(), lvar()) :: goal()
+#   @spec is(lterm(), lterm(), (term() -> term())) :: goal()
+#   @spec fresho(lterm()) :: goal()
+#   @spec staleo(lterm()) :: goal()
+# Kanren.CLP.Tree
+# Kanren.CLP.FD
+# Kanren.Nominal
+#   @callback fresh((a -> goal())) :: goal() when a: any()
+#   @callback hash()
+#   @callback tie()
+# Kanren.Ranked
+# Kanren.Tabled
+# Kanren.Prob
+
 defmodule Kanren.Core do
   alias Kanren.Stream
   alias Kanren.Substitutions

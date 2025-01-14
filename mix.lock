@@ -9,7 +9,9 @@
   "excoveralls": {:hex, :excoveralls, "0.18.0", "b92497e69465dc51bc37a6422226ee690ab437e4c06877e836f1c18daeb35da9", [:mix], [{:castore, "~> 1.0", [hex: :castore, repo: "hexpm", optional: true]}, {:jason, "~> 1.0", [hex: :jason, repo: "hexpm", optional: false]}], "hexpm", "1109bb911f3cb583401760be49c02cbbd16aed66ea9509fc5479335d284da60b"},
   "file_system": {:hex, :file_system, "0.2.10", "fb082005a9cd1711c05b5248710f8826b02d7d1784e7c3451f9c1231d4fc162d", [:mix], [], "hexpm", "41195edbfb562a593726eda3b3e8b103a309b733ad25f3d642ba49696bf715dc"},
   "jason": {:hex, :jason, "1.4.1", "af1504e35f629ddcdd6addb3513c3853991f694921b1b9368b0bd32beb9f1b63", [:mix], [{:decimal, "~> 1.0 or ~> 2.0", [hex: :decimal, repo: "hexpm", optional: true]}], "hexpm", "fbb01ecdfd565b56261302f7e1fcc27c4fb8f32d56eab74db621fc154604a7a1"},
+  "libgraph": {:hex, :libgraph, "0.16.0", "3936f3eca6ef826e08880230f806bfea13193e49bf153f93edcf0239d4fd1d07", [:mix], [], "hexpm", "41ca92240e8a4138c30a7e06466acc709b0cbb795c643e9e17174a178982d6bf"},
   "muzak": {:hex, :muzak, "1.1.1", "188362ff10515e815a4649b99ebf7bc8911c4028974453b94020118168aa17bf", [:mix], [], "hexpm", "5784462f600741ae7190cfb284809b92d9f06f92ec45d6ab5ae0d79eea61547e"},
+  "propcheck": {:hex, :propcheck, "1.4.1", "c12908dbe6f572032928548089b34ff9d40672d5d70f1562e3a9e9058d226cc9", [:mix], [{:libgraph, "~> 0.13", [hex: :libgraph, repo: "hexpm", optional: false]}, {:proper, "~> 1.4", [hex: :proper, repo: "hexpm", optional: false]}], "hexpm", "e1b088f574785c3c7e864da16f39082d5599b3aaf89086d3f9be6adb54464b19"},
   "proper": {:hex, :proper, "1.4.0", "89a44b8c39d28bb9b4be8e4d715d534905b325470f2e0ec5e004d12484a79434", [:rebar3], [], "hexpm", "18285842185bd33efbda97d134a5cb5a0884384db36119fee0e3cfa488568cbb"},
   "stream_data": {:hex, :stream_data, "0.6.0", "e87a9a79d7ec23d10ff83eb025141ef4915eeb09d4491f79e52f2562b73e5f47", [:mix], [], "hexpm", "b92b5031b650ca480ced047578f1d57ea6dd563f5b57464ad274718c9c29501c"},
 }
